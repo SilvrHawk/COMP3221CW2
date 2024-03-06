@@ -74,10 +74,29 @@ int main( int argc, char **argv )
 	double startTime = MPI_Wtime();
 	
 	// Sends the size of array that each process will take for the text to process
-	if(rank==0) charsPerProc = totalChars / numProcs;
-	//MPI_Scatter( &charsPerProc, 1, MPI_INT, &localcharsPerProc, 1, MPI_INT, 0, MPI_COMM_WORLD);
-	MPI_Bcast( &charsPerProc, 1, MPI_INT, 0, MPI_COMM_WORLD);
-
+	if((numProcs && (numProcs&(numProcs-1))==0) && numProcs != 1){
+		charsPerProc = totalChars / numProcs;
+		int lev = 0;
+		while(1 << lev < numProcs){
+			for(int i = 0; i < 1<<lev; i++){
+				int sender = i;
+				int receiver = i + (1 << lev);
+				if(rank == sender){
+					MPI_Send(&charsPerProc, 1, MPI_INT, receiver, 0, MPI_COMM_WORLD);
+				}
+				else if(rank == receiver){
+					MPI_Recv( &charsPerProc, 1, MPI_INT, sender, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+				}
+				MPI_Barrier(MPI_COMM_WORLD);
+			}
+			lev++;
+		}
+	}
+	else{
+		if(rank==0) charsPerProc = totalChars / numProcs;
+		MPI_Bcast( &charsPerProc, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	}
+	
 	// For each process thats not the main, dynamically allocates memory accordance to charsPerProc variable
 	char *localText=NULL;
 	localText = (char*) malloc( charsPerProc*sizeof(char) );
