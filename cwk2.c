@@ -34,8 +34,6 @@
 //
 int main( int argc, char **argv )
 {
-	int i, lc, charsPerProc;
-
 	// Initialise MPI and get the rank and no. of processes.
 	int rank, numProcs;
 	MPI_Init( &argc, &argv );
@@ -43,6 +41,7 @@ int main( int argc, char **argv )
 	MPI_Comm_rank( MPI_COMM_WORLD, &rank     );
 
 	// Read in the text file to rank 0.
+	int i, lc, charsPerProc;
 	char *fullText = NULL;
 	int totalChars = 0;
 	if( rank==0 )
@@ -73,70 +72,30 @@ int main( int argc, char **argv )
 
 	// Start the timing.
 	double startTime = MPI_Wtime();
-
-	//
-	// Your solution will primarily go here, although dynamic memory allocation and freeing may go elsewhere.
-	//
 	
-	if(rank==0){
-		charsPerProc = totalChars / numProcs;
+	// Sends the size of array that each process will take for the text to process
+	if(rank==0) charsPerProc = totalChars / numProcs;
+	//MPI_Scatter( &charsPerProc, 1, MPI_INT, &localcharsPerProc, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	MPI_Bcast( &charsPerProc, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
-		for(int p=1; p<numProcs; p++){
-			MPI_Send( &charsPerProc, 1, MPI_INT, p, 0, MPI_COMM_WORLD);
-		}
-	}
-	else{
-		MPI_Recv( &charsPerProc, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE );
-	}
-	
+	// For each process thats not the main, dynamically allocates memory accordance to charsPerProc variable
 	char *localText=NULL;
-	if(rank>0){
-		localText = (char*) malloc( charsPerProc*sizeof(char) );
-	}
+	localText = (char*) malloc( charsPerProc*sizeof(char) );
 
-	if(rank==0){
-		for(int p=1; p<numProcs; p++){
-			MPI_Send( &fullText[p*charsPerProc], charsPerProc, MPI_CHAR, p, 0, MPI_COMM_WORLD);
-		}
-	}
-	else{
-		MPI_Recv(localText, charsPerProc, MPI_CHAR, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-	}
-
-	//MPI_Scatter( &fullText[p*charsPerProc], charsPerProc, MPI_CHAR,
-	//				 localText, charsPerProc, MPI_CHAR, 0, MPI_COMM_WORLD);
+	// Main process sends all other processes part of the text to generate histograms from.
+	MPI_Scatter( fullText, charsPerProc, MPI_CHAR, localText, charsPerProc, MPI_CHAR, 0, MPI_COMM_WORLD);
 
 	// Below is code used to find the counts for all the letter codes
-	if(rank == 0){
-		for( int i=0; i<charsPerProc; i++){
-			if(fullText[i] >= 'a' && fullText[i] <= 'z')
-				globalHist[fullText[i] - 97]++;
-			else if(fullText[i] >= 'A' && fullText[i] <= 'Z')
-				globalHist[fullText[i] - 65]++;
-		}
-	}
-	else{
-		for( int i=0; i<charsPerProc; i++){
-			if(localText[i] >= 'a' && localText[i] <= 'z')
-				localHist[localText[i] - 97]++;
-			else if(localText[i] >= 'A' && localText[i] <= 'Z')
-				localHist[localText[i] - 65]++;
-		}
+
+	for( int i=0; i<charsPerProc; i++){
+		if(localText[i] >= 'a' && localText[i] <= 'z')
+			localHist[localText[i] - 97]++;
+		else if(localText[i] >= 'A' && localText[i] <= 'Z')
+			localHist[localText[i] - 65]++;
 	}
 
 	// Compiling the local histograms together
-	if(rank == 0){
-		for(int p=1; p<numProcs; p++){
-			int recvHist[MAX_LETTERS];
-			MPI_Recv(&recvHist, MAX_LETTERS, MPI_INT, p, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-			for(int i=0; i<MAX_LETTERS; i++){
-				globalHist[i] = globalHist[i]+recvHist[i];
-			}
-		}
-	}
-	else{
-		MPI_Send(localHist, MAX_LETTERS, MPI_INT, 0, 0, MPI_COMM_WORLD);
-	}
+	MPI_Reduce( localHist, globalHist, MAX_LETTERS, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
 
 	// Complete the timing and output the result.
 	if( rank==0 )
@@ -179,6 +138,7 @@ int main( int argc, char **argv )
 	{
 		saveHist( globalHist, MAX_LETTERS );			// Defined in cwk2_extras.h; do not change or replace the call.
 		free( fullText );
+		free( localText );
 	}
 	
 	MPI_Finalize();
