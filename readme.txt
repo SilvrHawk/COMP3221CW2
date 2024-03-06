@@ -16,13 +16,18 @@ Note that:
 
 No. Process:          Mean time (average of 3 runs)           Parallel speed-up, S:
 ============          =============================           =====================
-1	 
-2 	
-3 	
-4	 
+1	                    0.01160                                 1.0
+2 	                  0.00702                                 1.652
+3 	                  0.00575                                 2.017
+4	                    0.00346                                 3.353
 
 Architecture that the timing runs were performed on: desktop or laptop; make; and number of CPU cores:
+Desktop. Code is being run on an AMD Ryzen 5 3600 6-core processor.
 
 A brief interpretation of these results (2-3 sentences should be sufficient):
-
+As expected, the mean time reduced as more processes were used in the program. However, likely due to overheads
+from MPI, the speed-up wasn't a linear increase and because of this we didn't get a 4x speedup despite using 4x
+the processes. One note of interest is that for 3 processes, likely because the binary-tree distribution wasn't used, 
+the parallel speed-up rate is very similar to 2 processes, suggesting that the binary-tree does indeed speed processes up,
+and looks as if larger number of processes (8, 16, etc) would have larger benefits to the algorithm.
 
