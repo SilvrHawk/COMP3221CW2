@@ -77,7 +77,16 @@ int main( int argc, char **argv )
 	if((numProcs && (numProcs&(numProcs-1))==0) && numProcs != 1){
 		charsPerProc = totalChars / numProcs;
 		int lev = 0;
+		
+		// Iterates among the levels of the tree
+		//	  Level 0 -        O
+		//				      /\
+		//    Level 1 -      O  O
+		//				    /\  /\
+		//    Level 2 -    O O  O O
+		//	  And so on..
 		while(1 << lev < numProcs){
+			// For each process belonging on the level of tree
 			for(int i = 0; i < 1<<lev; i++){
 				int sender = i;
 				int receiver = i + (1 << lev);
@@ -92,6 +101,7 @@ int main( int argc, char **argv )
 		}
 	}
 	else{
+		// Otherwise perform regular broadcast to all other processes
 		if(rank==0) charsPerProc = totalChars / numProcs;
 		MPI_Bcast( &charsPerProc, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	}

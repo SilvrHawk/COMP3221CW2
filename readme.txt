@@ -28,6 +28,6 @@ A brief interpretation of these results (2-3 sentences should be sufficient):
 As expected, the mean time reduced as more processes were used in the program. However, likely due to overheads
 from MPI, the speed-up wasn't a linear increase and because of this we didn't get a 4x speedup despite using 4x
 the processes. One note of interest is that for 3 processes, likely because the binary-tree distribution wasn't used, 
-the parallel speed-up rate is very similar to 2 processes, suggesting that the binary-tree does indeed speed processes up,
-and looks as if larger number of processes (8, 16, etc) would have larger benefits to the algorithm.
+the parallel speed-up rate is closer to 2 processes than 4 processes, suggesting that the binary-tree does indeed speed
+the program up, and looks as if larger number of processes (8, 16, etc) would have larger benefits to the algorithm.
 
