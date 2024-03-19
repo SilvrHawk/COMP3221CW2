@@ -87,7 +87,6 @@ int main( int argc, char **argv )
 				else if(rank == receiver){
 					MPI_Recv( &charsPerProc, 1, MPI_INT, sender, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 				}
-				MPI_Barrier(MPI_COMM_WORLD);
 			}
 			lev++;
 		}
